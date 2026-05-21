@@ -8,6 +8,12 @@ tmp*/
 temp/
 temp*/
 
+# macOS
+.DS_Store
+
+# Conda installer (downloaded by setup script)
+Miniconda3-latest-Linux-x86_64.sh
+
 *.ply
 *.pth
 *.obj

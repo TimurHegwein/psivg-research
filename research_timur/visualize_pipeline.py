@@ -197,16 +197,31 @@ def get_rendered_frames(sid, n=3):
     rend_dir = _latest_run(DATA_ROOT / "OUT_Rendering" / sid)
     if rend_dir is None:
         return [None] * n
-    rgb_dir = rend_dir / "rgb"
-    return _get_frames(rgb_dir if rgb_dir.exists() else rend_dir, n)
+    # Real pipeline output: original_length/final/  (fallback: rgb/ for test data)
+    for candidate in [rend_dir / "original_length" / "final",
+                      rend_dir / "more_frames" / "final",
+                      rend_dir / "rgb",
+                      rend_dir]:
+        if candidate.exists():
+            frames = _get_frames(candidate, n)
+            if any(f is not None for f in frames):
+                return frames
+    return [None] * n
 
 
 def get_flow_frames(sid, n=3):
     rend_dir = _latest_run(DATA_ROOT / "OUT_Rendering" / sid)
     if rend_dir is None:
         return [None] * n
-    flow_dir = rend_dir / "flow_visual"
-    return _get_frames(flow_dir, n) if flow_dir.exists() else [None] * n
+    # Real pipeline output: original_length/flow_visual/  (fallback: flow_visual/)
+    for candidate in [rend_dir / "original_length" / "flow_visual",
+                      rend_dir / "more_frames" / "flow_visual",
+                      rend_dir / "flow_visual"]:
+        if candidate.exists():
+            frames = _get_frames(candidate, n)
+            if any(f is not None for f in frames):
+                return frames
+    return [None] * n
 
 
 def get_output_frames(sid, n=3):
