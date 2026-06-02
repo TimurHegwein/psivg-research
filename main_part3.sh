@@ -1,12 +1,18 @@
 #!/bin/bash -l
 
-mamba activate PSIVG_env3
+# Support both conda and mamba; prefer conda since mamba needs explicit shell hook
+# (bash script.sh runs a non-login shell that never sources .bashrc)
+source "$HOME/miniconda3/etc/profile.d/conda.sh" 2>/dev/null \
+  || source /root/miniconda3/etc/profile.d/conda.sh 2>/dev/null || true
+conda activate PSIVG_env3
 
 ### This script processes the data from the perception pipeline to the dataset for videogen
 
-VIDEO_ID="0000"
+# Override with environment variable: VIDEO_ID=0001 bash main_part3.sh
+VIDEO_ID="${VIDEO_ID:-0000}"
 
-USE_MOVING_CAMERA="true"
+# Set to "false" for static-camera videos (no RAFT background flow needed)
+USE_MOVING_CAMERA="${USE_MOVING_CAMERA:-true}"
 
 FLOW_THRESHOLD=2.0
 
@@ -53,8 +59,8 @@ python -c "from PIL import Image; Image.open('${FIRST_FRAME_PATH}').save('${IMAG
 
 
 # To segment static images (first frames) using LangSAM (filter by selected videos and prompts)
-mamba deactivate
-mamba activate langsam
+conda deactivate
+conda activate langsam
 
 echo "Starting image segmentation..."
 echo "Image dir: ${IMAGE_FOLDER}"
@@ -70,8 +76,8 @@ echo "Image segmentation completed!"
 
 
 # here, need to warp the noise with the optical flow and generate the noise.npy. store it
-mamba deactivate
-mamba activate PSIVG_env3
+conda deactivate
+conda activate PSIVG_env3
 
 python psivg/utils/make_warped_noise.py \
   --selected_vids_file ${SELECTED_VIDS} \
@@ -107,21 +113,21 @@ if [ "$USE_MOVING_CAMERA" = "true" ]; then
 
 
     # next, to get the masks for the template videos with moving camera
-    mamba deactivate
-    mamba activate langsam
+    conda deactivate
+    conda activate langsam
 
     python psivg/utils/segment_video_frames.py \
       --input_folder ${OUTPUT_DIR} \
       --text_prompt ${PROMPT_FG_FILE} \
       --frame_rate 8  \
       --output_dir ${OUTPUT_DIR}  \
-      --selected_vids_file ${SELECTED_VIDS} 
+      --selected_vids_file ${SELECTED_VIDS}
     echo "Masks for the template videos with moving camera completed!"
 
 
     # next, to merge the flows together using segmentation masks
-    mamba deactivate
-    mamba activate PSIVG_env3
+    conda deactivate
+    conda activate PSIVG_env3
 
 
     python psivg/utils/merge_flows_noises.py \

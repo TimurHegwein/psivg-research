@@ -71,6 +71,12 @@ fi
 conda activate PSIVG_env2
 pip install -r envs/PSIVG_env2.txt
 
+# ViPE's model download uses the gdown 4.x API (download(..., fuzzy=True)).
+# gdown 6+ removed the fuzzy kwarg, so pin the older version or ViPE's
+# weight download (triggered by main_part2.py) fails with a TypeError.
+echo "  Pinning gdown==4.7.3 for ViPE..."
+pip install "gdown==4.7.3"
+
 echo "  Installing ViPE..."
 cd psivg/perception/vipe
 pip install --no-build-isolation -e .

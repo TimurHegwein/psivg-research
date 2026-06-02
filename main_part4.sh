@@ -1,10 +1,16 @@
 #!/bin/bash -l
 
-mamba activate PSIVG_env3
+# Support both conda and mamba; prefer conda since mamba needs explicit shell hook
+# (bash script.sh runs a non-login shell that never sources .bashrc, so the
+#  mamba/conda shell functions are not available unless we source conda.sh here)
+source "$HOME/miniconda3/etc/profile.d/conda.sh" 2>/dev/null \
+  || source /root/miniconda3/etc/profile.d/conda.sh 2>/dev/null || true
+conda activate PSIVG_env3
 
 ### input video id and processed dataset
 
-export VIDEOS="0000"
+# Override with environment variable: VIDEOS=0001 bash main_part4.sh
+export VIDEOS="${VIDEOS:-0000}"
 
 export DATA_ROOT="data_root/datasets/generated_data_example"
 
@@ -32,7 +38,11 @@ export CHECKPOINTING_STEPS="10"
 
 export USE_TTCO="false"
 
-export USE_MOVING_CAMERA="true"
+# Set to "false" for static-camera videos (e.g. 0001 tennis ball).
+# NOTE: dataset.py hardcodes noises_column="merged_noises.txt" when this is
+# "true"; that file only exists for moving-camera videos, so leaving this on
+# for a static video raises "Expected --noises_column ...".
+export USE_MOVING_CAMERA="${USE_MOVING_CAMERA:-false}"
 
 
 ./psivg/video_generation/video_gen_i2v.sh
