@@ -770,16 +770,25 @@ def main(args):
     #### computing the indices of the regions to selectively decode here. Using regions with the highest foreground percentages.
     fg_percentages = compute_fg_percentages(fg_masks, regions)
 
-    # Finding the top 5 indices, or all non-zero areas (if there are less than 5 non-zero regions).
+    # Finding the top-K indices, or all non-zero areas (if there are fewer than K
+    # non-zero regions). Each selected region is VAE-decoded with its autograd
+    # graph held until backward, so peak memory scales ~linearly with K. The
+    # paper used K=5 on an H100 (80GB); on smaller GPUs (e.g. a 48GB L40S) the
+    # VAE decode OOMs. Lower K via TTCO_NUM_DECODE_REGIONS to fit — for small
+    # objects (e.g. a tennis ball) the foreground occupies only 1-2 tiles, so
+    # K=2 covers it fully with no meaningful change to the masked-loss region.
+    num_decode_regions = int(os.environ.get("TTCO_NUM_DECODE_REGIONS", "5"))
     fg_percentages_tensor = torch.tensor(fg_percentages)
     nonzero_indices = (fg_percentages_tensor > 0).nonzero(as_tuple=True)[0]
 
-    if len(nonzero_indices) >= 5:
-        _, top5_indices_in_nonzero = torch.topk(fg_percentages_tensor[nonzero_indices], 5)
-        top5_indices = nonzero_indices[top5_indices_in_nonzero]
-        selected_indices = top5_indices.tolist()
+    if len(nonzero_indices) >= num_decode_regions:
+        _, topk_indices_in_nonzero = torch.topk(fg_percentages_tensor[nonzero_indices], num_decode_regions)
+        topk_indices = nonzero_indices[topk_indices_in_nonzero]
+        selected_indices = topk_indices.tolist()
     else:
         selected_indices = nonzero_indices.tolist()
+    print(f"TTCO: decoding {len(selected_indices)} foreground region(s) "
+          f"(TTCO_NUM_DECODE_REGIONS={num_decode_regions})")
 
     # If TTCO is disabled, run a single one-off validation with the original prompt and exit.
     if not args.use_TTCO:
