@@ -14,7 +14,7 @@ echo "================================================================"
 cd "$REPO_ROOT"
 
 # ── 1. Miniconda ────────────────────────────────────────────────────────────
-if ! command -v conda &>/dev/null; then
+if [ ! -f "$CONDA_DIR/bin/conda" ]; then
     echo ""
     echo "── [1/7] Installing Miniconda ──"
     curl -sO https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
@@ -44,7 +44,9 @@ fi
 
 conda activate PSIVG_env1
 
-export TORCH_CUDA_ARCH_LIST="${TORCH_CUDA_ARCH_LIST:-7.0;7.5;8.0;8.6;8.7;8.9}"
+# Include 9.0 (Hopper/H100 = sm_90); without it GroundingDINO's compiled CUDA
+# kernel raises "no kernel image is available for execution on the device".
+export TORCH_CUDA_ARCH_LIST="${TORCH_CUDA_ARCH_LIST:-7.0;7.5;8.0;8.6;8.7;8.9;9.0}"
 export CUDA_INCLUDE_DIR="$CONDA_PREFIX/targets/x86_64-linux/include"
 export CUDA_LIB_DIR="$CONDA_PREFIX/targets/x86_64-linux/lib"
 export CPATH="$CUDA_INCLUDE_DIR:${CPATH:-}"
@@ -52,9 +54,15 @@ export CPLUS_INCLUDE_PATH="$CUDA_INCLUDE_DIR:${CPLUS_INCLUDE_PATH:-}"
 export LIBRARY_PATH="$CUDA_LIB_DIR:${LIBRARY_PATH:-}"
 
 echo "  Installing nvdiffrast..."
-python -m pip install --no-build-isolation git+https://github.com/NVlabs/nvdiffrast.git
+# nvdiffrast's heavy kernels make nvcc 11.8 SEGFAULT when compiling native
+# sm_90 (Hopper). Build sm_80/86 SASS + compute_86 PTX instead; the CUDA
+# driver JIT-compiles the forward-compatible PTX to sm_90 at runtime.
+# MAX_JOBS=2 keeps the parallel nvcc memory footprint sane.
+TORCH_CUDA_ARCH_LIST="8.0;8.6+PTX" MAX_JOBS=2 \
+  python -m pip install --no-build-isolation git+https://github.com/NVlabs/nvdiffrast.git
 
 echo "  Installing GroundingDINO..."
+# GroundingDINO compiles native sm_90 fine, so it uses the full arch list above.
 python -m pip install --no-build-isolation --no-deps git+https://github.com/IDEA-Research/GroundingDINO.git
 
 conda deactivate

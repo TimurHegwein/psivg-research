@@ -233,3 +233,9 @@ __marimo__/
 
 /outputs
 
+
+# Pipeline results pulled down from the pod (large data, not source)
+research_timur/pod_results/
+
+# Microsoft Office temporary lock files
+~$*
