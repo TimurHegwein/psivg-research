@@ -1,6 +1,9 @@
 export TORCH_LOGS="+dynamo,recompiles,graph_breaks"
 export TORCHDYNAMO_VERBOSE=1
-export WANDB_MODE="online"
+# "offline" logs the TTCO loss curve to ./wandb locally without needing a
+# WandB account/API key (online mode prompts interactively and hangs on a
+# fresh pod). Sync later with `wandb sync` or set to "online" if logged in.
+export WANDB_MODE="${WANDB_MODE:-offline}"
 export NCCL_P2P_DISABLE=1
 export TORCH_NCCL_ENABLE_MONITORING=0
 

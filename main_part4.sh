@@ -32,11 +32,18 @@ export NOISE_STEP_THRESH="700"
 export TIMESTEP_SAMPLING="noisy_steps"
 export TTCO_LOSS_LAMBDA="10"
 export MAX_TRAIN_STEPS="50"
-export VALIDATION_EPOCHS="50"
+# With 1 sample, 1 step == 1 epoch. Validate every 10 epochs so we capture the
+# TTCO optimization trajectory (videos at steps 10/20/30/40/50) instead of just
+# one final video. Lower = more intermediate videos but longer wall-clock.
+export VALIDATION_EPOCHS="10"
 export CHECKPOINTING_STEPS="10"
 
 
-export USE_TTCO="false"
+# Set to "true" to run Test-Time Compute Optimization. When "false" the script
+# only renders a single baseline video (validation_once/) and exits with
+# "Num trainable parameters = 0" — TTCO optimizes the foreground prompt
+# embeddings (fg_embeds_delta + per-layer deltas), NOT the LoRA weights.
+export USE_TTCO="${USE_TTCO:-true}"
 
 # Set to "false" for static-camera videos (e.g. 0001 tennis ball).
 # NOTE: dataset.py hardcodes noises_column="merged_noises.txt" when this is
