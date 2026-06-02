@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 PROJ_ROOT = Path(__file__).parent.parent
@@ -5,8 +6,18 @@ PRETRAINED_MODELS_DIR = PROJ_ROOT / "pretrained_models"
 CONFIGS_DIR = PROJ_ROOT / "configs"
 
 ###############################################################################
-### Change this to your own data root
-DATA_ROOT = PROJ_ROOT / "data_root"
+### Change this to your own data root.
+### Override per run with the PSIVG_DATA_ROOT env var to keep each pipeline
+### run's inputs+outputs in a separate directory, e.g.
+###   export PSIVG_DATA_ROOT=/workspace/psivg-research/run_tennisball
+### A relative path is resolved against the project root. Default: data_root
+_env_data_root = os.environ.get("PSIVG_DATA_ROOT")
+if _env_data_root:
+    DATA_ROOT = Path(_env_data_root)
+    if not DATA_ROOT.is_absolute():
+        DATA_ROOT = PROJ_ROOT / DATA_ROOT
+else:
+    DATA_ROOT = PROJ_ROOT / "data_root"
 ### Do not edit below this line
 ###############################################################################
 

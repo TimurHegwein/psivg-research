@@ -17,7 +17,9 @@ USE_MOVING_CAMERA="${USE_MOVING_CAMERA:-true}"
 FLOW_THRESHOLD=2.0
 
 #### prepared inputs
-FOLDER_NAME="data_root"
+# Override with PSIVG_DATA_ROOT to isolate a run's inputs+outputs (must match
+# the value used for main_part1/2.py and main_part4.sh). Default: data_root
+FOLDER_NAME="${PSIVG_DATA_ROOT:-data_root}"
 SELECTED_VIDS="${FOLDER_NAME}/OUT_Flow/rendering_path/${VIDEO_ID}.txt"
 PROMPT_FILE="${FOLDER_NAME}/INPUT_DATA/Prompts/${VIDEO_ID}.txt"  
 PROMPT_FG_FILE="${FOLDER_NAME}/INPUT_DATA/Prompts/${VIDEO_ID}_fg.txt"  

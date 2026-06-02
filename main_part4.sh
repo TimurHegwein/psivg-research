@@ -12,7 +12,9 @@ conda activate PSIVG_env3
 # Override with environment variable: VIDEOS=0001 bash main_part4.sh
 export VIDEOS="${VIDEOS:-0000}"
 
-export DATA_ROOT="data_root/datasets/generated_data_example"
+# Override the root with PSIVG_DATA_ROOT to isolate a run (must match the value
+# used for main_part1/2.py and main_part3.sh). Default: data_root
+export DATA_ROOT="${PSIVG_DATA_ROOT:-data_root}/datasets/generated_data_example"
 
 ### output directory and setting name
 export output_dir="./outputs"
