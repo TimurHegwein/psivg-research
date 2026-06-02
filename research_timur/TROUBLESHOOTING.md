@@ -128,6 +128,29 @@ cp data_root/OUT_Flow/computed_noises/0001/2026-05-21_run/original_length/obj_ma
    data_root/datasets/generated_data_example/0001/masks/0001.mp4
 ```
 
+### TTCO does nothing — `Num trainable parameters = 0`
+**Symptom:** Step 4 finishes very fast and only writes `validation_once/0001.mp4`; log says `num_trainable_parameters_prompt: 0` / `Num trainable parameters = 0`.
+**Cause:** `USE_TTCO="false"` in `main_part4.sh`. TTCO does **not** train the LoRA weights (they are frozen at `cogvideox_image_to_video_lora.py:450-452`); it optimizes the foreground **prompt embeddings** (`fg_embeds_delta` + per-layer deltas). Those are only made trainable when `--use_TTCO` is passed (line 470/542). Without it the script makes a dummy param, runs one validation, and returns (line 784-872).
+**Fix:**
+```bash
+sed -i 's/export USE_TTCO="false"/export USE_TTCO="true"/' main_part4.sh
+```
+For a visualization of the optimization *over time*, also lower `VALIDATION_EPOCHS` (e.g. to 10) so intermediate `validation_epoch{N}/` videos are written at steps 10/20/30/40/50 instead of only one at the end.
+
+### WandB prompts for API key / hangs
+**Symptom:** Step 4 hangs at `wandb: (1) Create a W&B account ...` or errors on missing API key.
+**Cause:** `video_gen_i2v.sh` sets `WANDB_MODE="online"`; a fresh pod has no WandB login.
+**Fix:** Use offline mode (still logs the TTCO loss curve locally to `./wandb`):
+```bash
+WANDB_MODE=offline bash main_part4.sh
+```
+
+### TTCO outputs to visualize
+- `outputs/.../0001/validation_once/0001.mp4` — baseline (no TTCO), for before/after
+- `outputs/.../0001/validation_epoch{N}/0001.mp4` — TTCO video per `VALIDATION_EPOCHS`
+- `outputs/.../0001/checkpoint-{step}/fg_embeds_delta_and_indices.pt` — optimized prompt deltas
+- `wandb/` — masked-loss curve (the quantity TTCO minimizes)
+
 ---
 
 ## General
